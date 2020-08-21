@@ -8,21 +8,30 @@ client.on('ready', () => {
 });
 
 client.on('message', msg => {
-    if (msg.content !== 'w2g') {
+    if (!msg.content.startsWith('w2g')) {
         return;
     }
+    
+    // could use regex here instead
+    const videoUrl = msg.replace('w2g', '').trim();
 
-    getWatchTogetherLink().then(url => msg.reply(`Ewa, hier is uw link bruur: ${url}`));
+    getWatchTogetherLink(videoUrl).then(url => msg.reply(`Ewa, hier is uw link bruur: ${url}`));
 });
 
 client.login(process.env.DISCORD_TOKEN);
 
-async function getWatchTogetherLink() {
-    const response = await fetch('https://w2g.tv/rooms/create', {method: 'POST', redirect: 'manual'});
+async function getWatchTogetherLink(videoUrl = '') {
+    const body = new FormData();
 
-    const body = await response.text();
+    body.append("api_key", process.env.W2G_API_KEY);
+    body.append("share", videoUrl);
 
-    const [url] = body.match(/https(.*)\?lang\=en/);
+    const response = await fetch("https://w2g.tv/rooms/create.json", {
+        method: "POST",
+        body,
+    });
 
-    return url;
+    const res = await response.json();
+
+    return `https://w2g.tv/rooms/${res.streamkey}`;
 }
